@@ -1,0 +1,15 @@
+D:\source\Le5\IB2PG\bin\Debug\net10.0\IB2PG.exe
+D:\source\Le5\IB2PG\bin\Debug\net10.0\IB2PG.deps.json
+D:\source\Le5\IB2PG\bin\Debug\net10.0\IB2PG.runtimeconfig.json
+D:\source\Le5\IB2PG\bin\Debug\net10.0\IB2PG.dll
+D:\source\Le5\IB2PG\bin\Debug\net10.0\IB2PG.pdb
+D:\source\Le5\IB2PG\obj\Debug\net10.0\IB2PG.GeneratedMSBuildEditorConfig.editorconfig
+D:\source\Le5\IB2PG\obj\Debug\net10.0\IB2PG.AssemblyInfoInputs.cache
+D:\source\Le5\IB2PG\obj\Debug\net10.0\IB2PG.AssemblyInfo.cs
+D:\source\Le5\IB2PG\obj\Debug\net10.0\IB2PG.csproj.CoreCompileInputs.cache
+D:\source\Le5\IB2PG\obj\Debug\net10.0\IB2PG.sourcelink.json
+D:\source\Le5\IB2PG\obj\Debug\net10.0\IB2PG.dll
+D:\source\Le5\IB2PG\obj\Debug\net10.0\refint\IB2PG.dll
+D:\source\Le5\IB2PG\obj\Debug\net10.0\IB2PG.pdb
+D:\source\Le5\IB2PG\obj\Debug\net10.0\IB2PG.genruntimeconfig.cache
+D:\source\Le5\IB2PG\obj\Debug\net10.0\ref\IB2PG.dll

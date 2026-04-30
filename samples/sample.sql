@@ -1,0 +1,40 @@
+CREATE PROCEDURE GET_ORDER_TOTALS (
+    CUSTOMER_ID INTEGER
+)
+RETURNS (
+    ORDER_ID   INTEGER,
+    TOTAL      NUMERIC(12,2)
+)
+AS
+DECLARE VARIABLE CNT INTEGER;
+DECLARE VARIABLE RUNNING NUMERIC(12,2);
+BEGIN
+    CNT     = 0;
+    RUNNING = 0;
+
+    FOR SELECT O.ORDER_ID, O.AMOUNT
+        FROM ORDERS O
+        WHERE O.CUSTOMER_ID = :CUSTOMER_ID
+        INTO :ORDER_ID, :TOTAL
+    DO BEGIN
+        CNT     = :CNT + 1;
+        RUNNING = :RUNNING + :TOTAL;
+
+        IF (:TOTAL > 1000) THEN BEGIN
+            EXECUTE PROCEDURE APPLY_DISCOUNT(:ORDER_ID, 10);
+        END
+
+        IF (:TOTAL = 0) THEN
+            RUNNING = :RUNNING;
+        ELSE IF (:TOTAL > 0) THEN
+        BEGIN
+             RUNNING = :RUNNING + 1;
+             IF (:RUNNING > 10000) THEN
+                RUNNING = :RUNNING - 1;
+        END
+        ELSE
+           RUNNING = :RUNNING + 2;
+
+        SUSPEND;
+    END
+END
