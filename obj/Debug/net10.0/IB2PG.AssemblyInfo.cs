@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("IB2PG")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+983018b997a50b61e1c14fb3d098580fc3543ccf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+62fc8dfd02f487d662df73fdc0aad192c3f7a653")]
 [assembly: System.Reflection.AssemblyProductAttribute("IB2PG")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IB2PG")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

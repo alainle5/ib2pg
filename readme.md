@@ -1,6 +1,6 @@
 # Interbase to Postgres
 ## Claude first command
-> Read the CLAUDE.md file in this project and create a detailed implementation plan.
+Command:  Read the CLAUDE.md file in this project and create a detailed implementation plan.
 
 The plan should include:
 1. Architecture of the parser

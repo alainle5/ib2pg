@@ -427,3 +427,28 @@ All files are new (project has no existing implementation):
 ## Verification
 
 End-to-end test: run `dotnet run -- samples/sample.sql --output out.sql` on a real IB procedure file and validate `out.sql` is accepted by `psql -f out.sql` against a PostgreSQL instance (or passes `pg_dump --schema-only` syntax check).
+
+
+# Plan approved. Starting implementation with Phase 1 — project skeleton.
+
+Update Todos
+
+[ ] Phase 1: Create .NET project skeleton and stub files
+
+[ ] Phase 2: Implement Tokenizer (Token, TokenType, Tokenizer)
+
+[ ] Phase 3: Implement SyntaxModel AST nodes
+
+[ ] Phase 4: Implement Parser — procedure header
+
+[ ] Phase 5: Implement Parser — simple statements and expressions
+
+[ ] Phase 6: Implement Parser — control flow (IF, FOR, WHILE, SELECT INTO, EXECUTE)
+
+[ ] Phase 7: Implement Generator — procedure frame and TypeMapper
+
+[ ] Phase 8: Implement Generator — all statement emitters
+
+[ ] Phase 9: Wire end-to-end pipeline, CLI flags, error handling
+
+[ ] Phase 10: Edge cases and test project setup
