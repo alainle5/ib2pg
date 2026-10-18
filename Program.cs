@@ -3,6 +3,7 @@ using IB2PG;
 if (args.Length == 0)
 {
     Console.Error.WriteLine("Usage: IB2PG <input.sql> [--output <output.sql>] [--verbose]");
+    Console.ReadLine();
     return 1;
 }
 
