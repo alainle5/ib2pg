@@ -236,9 +236,10 @@ public sealed class PostgresGenerator
 
     private string EmitExpression(ExpressionNode expr) => expr switch
     {
-        LiteralExpression e       => e.RawValue,
-        VariableExpression e      => e.Name.ToLowerInvariant(),
-        RawExpression e           => RawTextTransformer.Normalize(e.RawText),
+        LiteralExpression e          => e.RawValue,
+        VariableExpression e         => e.Name.ToLowerInvariant(),
+        ColumnReferenceExpression e  => SyntaxRules.FormatColumnRef(e.Qualifier, e.ColumnName),
+        RawExpression e              => RawTextTransformer.Normalize(e.RawText),
         UnaryExpression e         => e.Operator == "-"
                                        ? $"-{EmitExpression(e.Operand)}"
                                        : $"{e.Operator} {EmitExpression(e.Operand)}",

@@ -35,7 +35,11 @@ public static class TypeMapper
         if (!Map.TryGetValue(name, out string? pgType))
             pgType = dt.TypeName.ToLowerInvariant(); // unknown type — pass through lowercased
 
-        // Append modifiers
+        // PostgreSQL text has no length modifier; length is dropped silently
+        if (pgType == "text")
+            return pgType;
+
+        // Append modifiers for types that support them
         if (dt.Precision.HasValue && dt.Scale.HasValue)
             return $"{pgType}({dt.Precision},{dt.Scale})";
 

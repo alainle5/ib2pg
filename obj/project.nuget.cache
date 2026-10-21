@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "UBmFjefFNdc=",
+  "dgSpecHash": "eY4pSeneQDU=",
   "success": true,
   "projectFilePath": "D:\\source\\Le5\\IB2PG\\IB2PG.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "s:\\.nuget\\microsoft.netcore.app.ref\\8.0.15\\microsoft.netcore.app.ref.8.0.15.nupkg.sha512",
+    "s:\\.nuget\\microsoft.windowsdesktop.app.ref\\8.0.15\\microsoft.windowsdesktop.app.ref.8.0.15.nupkg.sha512",
+    "s:\\.nuget\\microsoft.aspnetcore.app.ref\\8.0.15\\microsoft.aspnetcore.app.ref.8.0.15.nupkg.sha512",
+    "s:\\.nuget\\microsoft.netcore.app.host.win-x64\\8.0.15\\microsoft.netcore.app.host.win-x64.8.0.15.nupkg.sha512"
+  ],
   "logs": []
 }

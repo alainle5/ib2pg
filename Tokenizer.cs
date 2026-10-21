@@ -65,6 +65,7 @@ public sealed class Tokenizer
         ["HAVING"]           = TokenType.KwHaving,
         ["DISTINCT"]         = TokenType.KwDistinct,
         ["ALL"]              = TokenType.KwAll,
+        ["LIMIT"]            = TokenType.KwLimit,
         ["RETURNING_VALUES"] = TokenType.KwReturningValues,
     };
 

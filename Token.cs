@@ -92,6 +92,7 @@ public enum TokenType
     KwHaving,
     KwDistinct,
     KwAll,
+    KwLimit,
     KwReturningValues,
 
     // Special

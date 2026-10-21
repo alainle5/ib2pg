@@ -16,6 +16,15 @@ BEGIN
         END IF;
         IF total = 0 THEN
             running := running;
+        ELSE
+            IF total > 0 THEN
+                running := running + 1;
+                IF running > 10000 THEN
+                    running := running - 1;
+                END IF;
+            ELSE
+                running := running + 2;
+            END IF;
         END IF;
         RETURN NEXT;
     END LOOP;

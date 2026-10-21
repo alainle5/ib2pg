@@ -153,6 +153,9 @@ public sealed class InterbaseParser
             Expect(TokenType.RightParen);
         }
 
+        // Skip optional IB CHARACTER SET <charset> clause (e.g. VARCHAR(20) CHARACTER SET NONE)
+        SkipCharacterSetClause();
+
         return new DataType
         {
             TypeName  = typeName,
@@ -160,6 +163,23 @@ public sealed class InterbaseParser
             Precision = precision,
             Scale     = scale,
         };
+    }
+
+    private void SkipCharacterSetClause()
+    {
+        // Matches: CHARACTER SET <name>   or   CHAR SET <name>
+        bool isChar = (Current.Type == TokenType.Identifier && Current.Value == "CHARACTER")
+                   || (Current.Type == TokenType.KwChar);
+        if (isChar && Peek().Type == TokenType.KwSet)
+        {
+            Consume(); // CHARACTER / CHAR
+            Consume(); // SET
+            // Consume charset name: NONE, UTF8, WIN1252, OCTETS, etc.
+            if (Current.Type is TokenType.Identifier
+                             or TokenType.KwNull
+                             or TokenType.KwAll)
+                Consume();
+        }
     }
 
     // ── Statement list ────────────────────────────────────────────────────────
@@ -208,6 +228,7 @@ public sealed class InterbaseParser
 
             case TokenType.ColonIdent when Peek().Type == TokenType.Equals:
             case TokenType.Identifier when Peek().Type == TokenType.Equals:
+            case TokenType.KwLimit    when Peek().Type == TokenType.Equals:
                 return ParseAssignment();
 
             default:
@@ -349,28 +370,78 @@ public sealed class InterbaseParser
     {
         Expect(TokenType.KwSelect);
 
-        // IB SELECT INTO order: SELECT cols INTO :vars FROM table [WHERE...] [ORDER...]
+        // Stop collecting columns at INTO, FROM, or semicolon
         var selectStops = new HashSet<TokenType>
             { TokenType.KwInto, TokenType.KwFrom, TokenType.Semicolon };
         var cols = CollectColumnList(selectStops);
 
-        // If no INTO, degrade to raw
-        if (Current.Type != TokenType.KwInto)
+        // IB supports two orderings:
+        //  (a) SELECT cols INTO :vars FROM table [WHERE...] — INTO before FROM
+        //  (b) SELECT cols FROM table [WHERE...] INTO :vars  — INTO after WHERE (standard IB)
+        if (Current.Type == TokenType.KwInto)
         {
-            string partial = "SELECT " + string.Join(", ", cols);
-            if (Current.Type == TokenType.KwFrom)
+            // Case (a): INTO immediately after column list
+            Consume(); // INTO
+            var intoVars = ParseColonIdentList();
+            return ParseSelectIntoFromClause(cols, intoVars);
+        }
+
+        if (Current.Type == TokenType.KwFrom)
+        {
+            // Case (b): FROM before INTO — standard IB SELECT INTO ordering
+            Consume(); // FROM
+            string fromClause = CollectFragmentUntil(new HashSet<TokenType>
+                { TokenType.KwWhere, TokenType.KwInto, TokenType.Semicolon,
+                  TokenType.KwOrder, TokenType.KwGroup, TokenType.KwHaving });
+
+            string? whereClause = null;
+            if (Current.Type == TokenType.KwWhere)
             {
                 Consume();
-                string rest = CollectFragmentUntil(new HashSet<TokenType> { TokenType.Semicolon });
-                partial += " FROM " + rest;
+                whereClause = CollectFragmentUntil(new HashSet<TokenType>
+                    { TokenType.KwInto, TokenType.Semicolon,
+                      TokenType.KwOrder, TokenType.KwGroup, TokenType.KwHaving });
             }
+
+            string? otherClauses = null;
+            if (Current.Type is TokenType.KwOrder or TokenType.KwGroup or TokenType.KwHaving)
+            {
+                otherClauses = CollectFragmentUntil(new HashSet<TokenType>
+                    { TokenType.KwInto, TokenType.Semicolon });
+            }
+
+            if (Current.Type == TokenType.KwInto)
+            {
+                // INTO found after WHERE/ORDER — this is the standard IB format
+                Consume();
+                var intoVars = ParseColonIdentList();
+                TryConsume(TokenType.Semicolon, out _);
+                return new SelectIntoStatement
+                {
+                    SelectColumns = cols,
+                    IntoVariables = intoVars,
+                    FromClause    = fromClause,
+                    WhereClause   = whereClause,
+                    OtherClauses  = otherClauses,
+                };
+            }
+
+            // No INTO — plain SELECT statement, pass through as raw
+            string partial = "SELECT " + string.Join(", ", cols) + " FROM " + fromClause;
+            if (whereClause is not null) partial += " WHERE " + whereClause;
+            if (otherClauses is not null) partial += " " + otherClauses;
             TryConsume(TokenType.Semicolon, out _);
             return new RawStatement { RawSql = partial };
         }
 
-        Expect(TokenType.KwInto);
-        var intoVars = ParseColonIdentList();
+        // No FROM, no INTO — degrade to raw (e.g. SELECT 1)
+        string rawOnly = "SELECT " + string.Join(", ", cols);
+        TryConsume(TokenType.Semicolon, out _);
+        return new RawStatement { RawSql = rawOnly };
+    }
 
+    private SelectIntoStatement ParseSelectIntoFromClause(List<string> cols, List<string> intoVars)
+    {
         Expect(TokenType.KwFrom);
         string fromClause = CollectFragmentUntil(new HashSet<TokenType>
             { TokenType.KwWhere, TokenType.Semicolon, TokenType.KwOrder, TokenType.KwGroup, TokenType.KwHaving });
@@ -635,8 +706,22 @@ public sealed class InterbaseParser
                 return new VariableExpression { Name = name };
             }
 
-            case TokenType.Identifier:
+            case TokenType.KwLimit:
+            {
+                // Bare LIMIT in expression position — always a column reference (not a keyword)
+                Consume();
+                return new ColumnReferenceExpression { ColumnName = "LIMIT" };
+            }
+
             case TokenType.QuotedIdentifier:
+            {
+                // InterBase Dialect 1: double-quoted values are string literals, not identifiers.
+                string pgLiteral = SyntaxRules.IbDoubleQuotedToPostgresString(Current.Value);
+                Consume();
+                return new LiteralExpression { RawValue = pgLiteral };
+            }
+
+            case TokenType.Identifier:
             {
                 string name = Current.Value;
                 Consume();
@@ -655,8 +740,13 @@ public sealed class InterbaseParser
                 }
                 if (Current.Type == TokenType.Dot)
                 {
-                    // qualified name e.g. schema.table — collect as raw
-                    Consume();
+                    Consume(); // consume dot
+                    if (Current.Type == TokenType.KwLimit)
+                    {
+                        // Qualified reserved column: e.g. P.LIMIT → p."limit"
+                        Consume();
+                        return new ColumnReferenceExpression { Qualifier = name, ColumnName = "LIMIT" };
+                    }
                     string field = Current.Value;
                     Consume();
                     return new VariableExpression { Name = name + "." + field };
@@ -806,11 +896,24 @@ public sealed class InterbaseParser
 
     private string CurrentTokenAsRaw()
     {
-        // Use RawText to preserve original casing for SQL fragments
-        // but strip colons from variable references
-        return Current.Type == TokenType.ColonIdent
-            ? Current.Value.ToLowerInvariant()  // colon already stripped; lowercase for PG
-            : Current.RawText;
+        if (Current.Type == TokenType.ColonIdent)
+            return Current.Value.ToLowerInvariant(); // colon already stripped; lowercase for PG
+
+        if (Current.Type == TokenType.KwLimit)
+        {
+            // SQL row-limiter: LIMIT followed by an integer literal is the keyword → lowercase, no quotes
+            var next = Peek();
+            if (next.Type is TokenType.IntegerLiteral or TokenType.FloatLiteral)
+                return "limit";
+            // Otherwise it is a database column reference → must be double-quoted in PG
+            return SyntaxRules.QuoteColumnName("LIMIT");
+        }
+
+        // InterBase Dialect 1: double-quoted values are string literals, not identifiers.
+        if (Current.Type == TokenType.QuotedIdentifier)
+            return SyntaxRules.IbDoubleQuotedToPostgresString(Current.Value);
+
+        return Current.RawText;
     }
 
     private static bool ContainsSuspend(List<StatementNode> stmts)
@@ -870,7 +973,8 @@ public sealed class InterbaseParser
                          or TokenType.KwBigint
                          or TokenType.KwBlob
                          or TokenType.KwBoolean
-                         or TokenType.KwPrecision)
+                         or TokenType.KwPrecision
+                         or TokenType.KwLimit)     // LIMIT may be used as an identifier name
             return Consume();
 
         throw new ParseException("Expected identifier", Current);

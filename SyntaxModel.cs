@@ -115,6 +115,16 @@ public sealed class VariableExpression : ExpressionNode
     public string Name { get; init; } = "";   // colon already stripped, uppercased
 }
 
+/// <summary>
+/// A database column reference, which may require quoting (e.g. LIMIT → "limit").
+/// Distinct from VariableExpression (procedural variables / parameters).
+/// </summary>
+public sealed class ColumnReferenceExpression : ExpressionNode
+{
+    public string? Qualifier  { get; init; }   // table alias / prefix, uppercased; null if unqualified
+    public string  ColumnName { get; init; } = ""; // uppercased column name
+}
+
 public sealed class BinaryExpression : ExpressionNode
 {
     public ExpressionNode Left     { get; init; } = null!;
